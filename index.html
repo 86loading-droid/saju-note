@@ -279,6 +279,16 @@ details.tocw summary{cursor:pointer;font-weight:800;font-family:var(--f-display)
 .ic2{display:flex;gap:2px;justify-content:center;margin-bottom:2px}
 .ic2 .gz-ic{width:26px;height:26px;margin:0}
 .dy button .ic2 .gz-ic{width:24px;height:24px}
+
+.pillrow{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.pill4{display:flex;align-items:center;gap:2px;background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:2px 6px}
+.pill4 .gz-ic{width:22px;height:22px;margin:0}
+.pill4 b{font-family:var(--f-hanja);font-size:13px;margin-left:2px}
+.pairic{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:12px}
+.pairic>div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.ic2.inl{display:inline-flex;vertical-align:-6px;margin:0 4px 0 0}
+.ic2.inl .gz-ic{width:20px;height:20px}
+.person{grid-template-columns:1fr auto}
 </style></head><body>
 <div class="wrap">
   <header class="top">
@@ -309,6 +319,7 @@ details.tocw summary{cursor:pointer;font-weight:800;font-family:var(--f-display)
         <div class="f"><label for="tm">태어난 시각</label><input class="in" id="tm" type="time" value="13:20"></div>
         <div class="f"><span class="lbl">&nbsp;</span><label class="chk" style="padding-top:9px"><input type="checkbox" id="noTime"> 시간 모름 (시주 제외)</label></div>
         <div class="f"><label for="city">태어난 곳</label><select class="in" id="city"></select></div>
+        <div class="f"><label for="rel">관계 상태</label><select class="in" id="rel"><option value="na">선택 안 함</option><option value="single">미혼·솔로</option><option value="dating">연애 중</option><option value="married">기혼</option><option value="divorced">이혼·사별</option></select></div>
         <div class="f s6"><details class="adv"><summary>세부 계산 기준</summary>
           <div class="row" style="margin-top:8px;gap:14px">
             <label class="chk"><input type="checkbox" id="lmt" checked> 출생지 경도로 지방시 보정 (서울 약 −32분)</label>
@@ -356,7 +367,7 @@ details.tocw summary{cursor:pointer;font-weight:800;font-family:var(--f-display)
   <section class="panel" id="p-people" hidden>
     <div class="card">
       <h3 style="font-size:18px">가족·친구 명부</h3>
-      <p class="hint" style="margin-top:4px">명부는 이 기기의 브라우저에 저장됩니다. 다른 기기나 가족에게는 ‘공유 링크’나 ‘명부 코드’로 옮기세요.</p>
+      <p class="hint" style="margin-top:4px">관계 상태(기혼·연애 중 등)를 입력하면 3장 인연 풀이가 그에 맞게 달라집니다. 명부는 이 기기의 브라우저에 저장됩니다. 다른 기기나 가족에게는 ‘공유 링크’나 ‘명부 코드’로 옮기세요.</p>
       <div class="people" id="plist"></div>
     </div>
     <div class="card" style="margin-top:12px">
@@ -974,7 +985,7 @@ var ART = (function () {
   }
 
   // 인생 그래프(대운 점수)
-  function lifeGraph(pts, nowAge) {
+  function lifeGraph(pts, nowAge, bi, wi) {
     var W = 640, H = 230, L = 34, Rm = 14, T = 16, B = 40, n = pts.length;
     var minA = pts[0].age, maxA = pts[n - 1].age + 9;
     function x(a) { return L + (a - minA) / (maxA - minA) * (W - L - Rm); }
@@ -985,10 +996,11 @@ var ART = (function () {
     s += '<polygon points="' + r2(x(pts[0].age + 5)) + ',' + y(0) + ' ' + line + ' ' + r2(x(pts[n - 1].age + 5)) + ',' + y(0) + '" fill="var(--glow)"/>';
     s += '<polyline points="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>';
     var best = 0, worst = 0; pts.forEach(function (p, i) { if (p.s > pts[best].s) best = i; if (p.s < pts[worst].s) worst = i; });
+    if (bi != null && bi >= 0) best = bi; if (wi != null && wi >= 0) worst = wi;
     if (nowAge >= minA && nowAge <= maxA) s += '<line x1="' + r2(x(nowAge)) + '" x2="' + r2(x(nowAge)) + '" y1="' + T + '" y2="' + y(0) + '" stroke="var(--seal)" stroke-dasharray="4 3"/><text x="' + r2(x(nowAge) + 4) + '" y="' + (T + 10) + '" class="t3" fill="var(--seal)">지금</text>';
     pts.forEach(function (p, i) {
       var c = i === best ? 'var(--good)' : (i === worst ? 'var(--bad)' : 'var(--accent)');
-      s += '<circle cx="' + r2(x(p.age + 5)) + '" cy="' + r2(y(p.s)) + '" r="' + (i === best || i === worst ? 6 : 4) + '" fill="' + c + '" stroke="var(--surface)" stroke-width="2"/>';
+      s += '<circle cx="' + r2(x(p.age + 5)) + '" cy="' + r2(y(p.s)) + '" r="' + (i === best || i === worst ? 6 : 4) + '" fill="' + c + '" stroke="var(--surface)" stroke-width="2" opacity="' + (p.age + 9 < nowAge ? .4 : 1) + '"/>';
       s += '<text x="' + r2(x(p.age + 5)) + '" y="' + (H - 22) + '" class="t3" text-anchor="middle">' + p.age + '세</text><text x="' + r2(x(p.age + 5)) + '" y="' + (H - 8) + '" class="t3 hj" text-anchor="middle">' + p.label + '</text>';
     });
     s += '<text x="' + r2(x(pts[best].age + 5)) + '" y="' + r2(y(pts[best].s) - 12) + '" class="t3" text-anchor="middle" fill="var(--good)">최고</text>';
@@ -1107,10 +1119,11 @@ var ART = (function () {
   var $ = function (s) { return document.querySelector(s); };
   var APP_URL = 'https://86loading-droid.github.io/saju-note/';
   var KEY = 'wolha-saju-people-v1';
-  var EXAMPLE = { id: 'example', name: '홍길동(예시)', gender: 'M', cal: 'solar', leap: false, y: 1990, m: 5, d: 15, timeKnown: true, h: 13, mi: 20, lon: 126.98, city: '서울', lmt: true, zasi: 'jo', example: true };
-  var EXAMPLE2 = { id: 'example2', name: '성춘향(예시)', gender: 'F', cal: 'solar', leap: false, y: 1992, m: 9, d: 3, timeKnown: true, h: 7, mi: 40, lon: 127.15, city: '전주', lmt: true, zasi: 'jo', example: true };
+  var EXAMPLE = { id: 'example', name: '홍길동(예시)', gender: 'M', cal: 'solar', leap: false, y: 1990, m: 5, d: 15, timeKnown: true, h: 13, mi: 20, lon: 126.98, city: '서울', lmt: true, zasi: 'jo', rel: 'married', example: true };
+  var EXAMPLE2 = { id: 'example2', name: '성춘향(예시)', gender: 'F', cal: 'solar', leap: false, y: 1992, m: 9, d: 3, timeKnown: true, h: 7, mi: 40, lon: 127.15, city: '전주', lmt: true, zasi: 'jo', rel: 'single', example: true };
   var EL = SJ.EL, GAN = SJ.GAN, ZHI = SJ.ZHI, GK = SJ.GAN_KO, ZK = SJ.ZHI_KO;
   var WA = ['과 ', '와 ', '와 ', '과 ', '와 '], IGA = ['이', '가', '가', '이', '가'];
+  var REL = { single: '미혼·솔로', dating: '연애 중', married: '기혼', divorced: '이혼·사별' };
   var cur = null, mode = 'myeong';
   try { mode = localStorage.getItem(KEY + '-mode') || 'myeong'; } catch (e) { }
   var now = new Date(), THIS_YEAR = now.getFullYear();
@@ -1153,7 +1166,7 @@ var ART = (function () {
     $('#noTime').checked = !p.timeKnown; $('#tm').value = p.timeKnown ? pad(+p.h) + ':' + pad(+p.mi) : '';
     $('#tm').disabled = !p.timeKnown;
     citySel.value = String(p.lon); if (!citySel.value) citySel.value = '126.98';
-    $('#lmt').checked = p.lmt !== false; $('#zasi').value = p.zasi || 'jo';
+    $('#lmt').checked = p.lmt !== false; $('#zasi').value = p.zasi || 'jo'; $('#rel').value = p.rel || 'na';
   }
   function readForm() {
     var y = +$('#yy').value, m = +$('#mm').value, d = +$('#dd').value, t = $('#tm').value, noT = $('#noTime').checked;
@@ -1166,7 +1179,7 @@ var ART = (function () {
     var sel = citySel.options[citySel.selectedIndex];
     return {
       id: cur && cur.p && !cur.p.example && cur.p.id && cur.p.name === $('#nm').value.trim() ? cur.p.id : null,
-      name: $('#nm').value.trim() || $('#nm').placeholder.replace(/\(예시\)$/, '') || '이름 없음', gender: $('#gdF').checked ? 'F' : 'M', cal: cal, leap: cal === 'lunar' && $('#leap').checked,
+      name: $('#nm').value.trim() || $('#nm').placeholder.replace(/\(예시\)$/, '') || '이름 없음', gender: $('#gdF').checked ? 'F' : 'M', cal: cal, leap: cal === 'lunar' && $('#leap').checked, rel: $('#rel').value,
       y: y, m: m, d: d, timeKnown: !noT, h: noT ? 12 : +t.slice(0, 2), mi: noT ? 0 : +t.slice(3), lon: +sel.value, city: sel.textContent.replace(/\(.*\)/, ''),
       lmt: $('#lmt').checked, zasi: $('#zasi').value
     };
@@ -1198,7 +1211,7 @@ var ART = (function () {
       '<div class="chips"><span class="chip">' + esc(birthText(p)) + '</span>' +
       '<span class="chip">' + (p.cal === 'lunar' ? '양력 ' + c.solar.y + '.' + pad(c.solar.m) + '.' + pad(c.solar.d) : '음력 ' + (c.lunar.leap ? '윤' : '') + c.lunar.m + '월 ' + c.lunar.d + '일') + '</span>' +
       '<span class="chip"><b>' + korean(P.year) + '년생 ' + zodiac + '띠</b></span><span class="chip">일주 <b>' + korean(P.day) + '</b></span>' +
-      '<span class="chip">' + SJ.STAR9[cur.ks.hon] + '</span><span class="chip">' + cur.tc.type + '천중살</span></div></div>' +
+      '<span class="chip">' + SJ.STAR9[cur.ks.hon] + '</span><span class="chip">' + cur.tc.type + '천중살</span>' + (REL[p.rel] ? '<span class="chip"><b>' + REL[p.rel] + '</b></span>' : '') + '</div></div>' +
       '<div class="moonbox">' + ART.moonHero() + '</div></div>' + bubble('안녕하세요, 저는 사주를 읽어 드리는 아기 이나예요. ' + esc(p.name) + '님의 여덟 글자를 지금부터 하나씩 풀어 드릴게요.');
     html += '<div class="modes" role="tablist" aria-label="풀이 관점"><button type="button" role="tab" id="mdM" data-mode="myeong" aria-selected="' + (mode === 'myeong') + '">명리학 풀이<small>사주팔자·십성·대운</small></button>' +
       '<button type="button" role="tab" id="mdJ" data-mode="japan" aria-selected="' + (mode === 'japan') + '">일본 사주학 풀이<small>산명학·천중살·구성기학</small></button></div>';
@@ -1277,7 +1290,7 @@ var ART = (function () {
   var TOPICS = [
     { k: '이직·승진', f: function (r, i) { var w = []; if (i.gs === 3 || i.gb === 3) w.push('조직·평판 기운(관성)'); if (i.gs === 4) w.push('문서·계약 기운(인성)'); if (i.rd.indexOf('충') > -1) w.push('자리 이동 신호(일지 충)'); return w; } },
     { k: '창업·부업', f: function (r, i) { var w = []; if (i.gs === 1 || i.gb === 1) w.push('아웃풋 기운(식상)'); if (i.gs === 2 || i.gb === 2) w.push('돈 흐름(재성)'); return w.length === 2 || (w.length && i.sc.s >= 60) ? w : []; } },
-    { k: '연애·결혼', f: function (r, i) { var l = loveScore(r, i); return l.s >= 60 ? l.why : []; } },
+    { k: '연애·결혼', kk: { married: '부부·가정', divorced: '새 인연' }, f: function (r, i) { var l = loveScore(r, i); return l.s >= 60 ? l.why : []; } },
     { k: '이사·이동', f: function (r, i) { var w = []; if (i.p.z === yeokmaZ(r.c.pillars.day.z) || i.p.z === yeokmaZ(r.c.pillars.year.z)) w.push('이동 지수(역마)'); if (i.rd.indexOf('충') > -1) w.push('생활 기반 변화(일지 충)'); return w; } },
     { k: '시험·자격', f: function (r, i) { var w = []; if (i.gs === 4 || i.gb === 4) w.push('학습 기운(인성)'); if (i.p.z === [5, 6, 8, 9, 8, 9, 11, 0, 2, 3][r.a.dm]) w.push('문창(시험 운)'); return w; } },
     { k: '재테크·투자', f: function (r, i) { var w = []; if ((i.gs === 2 || i.gb === 2) && r.a.ratio > 0.4) w.push('재물 기운을 감당할 힘'); else if ((i.gs === 2 || i.gb === 2) && i.sc.s >= 60) w.push('재물 기운 + 좋은 흐름'); return w; } },
@@ -1288,7 +1301,7 @@ var ART = (function () {
       var hits = yrs.map(function (i) { return { i: i, w: t.f(r, i) }; }).filter(function (x) { return x.w.length; });
       hits.sort(function (x, y) { return t.warn ? x.i.sc.s - y.i.sc.s : y.i.sc.s - x.i.sc.s; });
       hits = hits.slice(0, 3).sort(function (x, y) { return x.i.Y - y.i.Y; });
-      return '<div class="tt-row"><div class="tt-k">' + t.k + (t.warn ? ' <span class="tag w">조심</span>' : '') + '</div><div class="tt-v">' +
+      return '<div class="tt-row"><div class="tt-k">' + ((t.kk && t.kk[r.p.rel]) || t.k) + (t.warn ? ' <span class="tag w">조심</span>' : '') + '</div><div class="tt-v">' +
         (hits.length ? hits.map(function (h) { return '<span class="yr-pill' + (t.warn ? ' warn' : '') + '"><b>' + h.i.Y + '</b> ' + h.w.join(', ') + '</span>'; }).join('') : '<span class="hint">앞으로 10년 안에 뚜렷한 신호가 없습니다. 대운 흐름을 참고하세요.</span>') + '</div></div>';
     }).join('') + '</div>';
   }
@@ -1335,7 +1348,7 @@ var ART = (function () {
           SJ.GROUP.map(function (g, k) { var n = a.grp[k]; return '<div class="item"><h4>' + gm(k) + ' <span class="tag ' + (n === 0 ? 'b' : n >= 3 ? 'w' : 'g') + '">' + n + '개</span></h4><p>' + (n === 0 ? TX.group[k].none : n >= 3 ? TX2.desire[k] + '에 에너지가 쏠려 있습니다. 반대 기운으로 균형을 잡으세요.' : '적당히 갖춰져 있습니다.') + '</p></div>'; }).join('') + '</div>' +
           term('십성은 나(일간)와 다른 글자의 관계를 열 가지 역할로 나눈 것입니다. 비겁=나와 같은 편, 식상=내가 만들어 내는 것, 재성=내가 다루는 돈·자원, 관성=나를 관리하는 조직·규칙, 인성=나를 키워 주는 배움·지원.') },
         { t: '인생 에너지 사이클(십이운성)', h: '<div class="two">' + ART.ring12(SJ.STAGES, stageMarks) + '<div class="grid2" style="margin-top:0">' + a.pos.map(function (x) { return '<div class="item"><h4>' + x.label + '주 <span class="tag">' + x.stage + '</span></h4><p>' + TX.stage[x.stage] + '</p></div>'; }).join('') + '</div></div>' },
-        { t: '특수 코드 — 신살·귀인·합충', h: (a.sal.length || a.gwi.length ? '<div class="grid2">' + a.sal.map(function (s) { return '<div class="item"><h4>' + s.n + ' <small>' + esc(s.at) + '</small></h4><p>' + TX.sal[s.n] + '</p></div>'; }).join('') + a.gwi.map(function (s) { return '<div class="item"><h4>' + s.n + ' <span class="tag g">귀인</span></h4><p>' + TX.gwi[s.n] + '</p></div>'; }).join('') + '</div>' : '<p class="p">두드러진 신살이 없어 무난한 흐름입니다.</p>') +
+        { t: '특수 코드 — 신살·귀인·합충', h: (a.sal.length || a.gwi.length ? '<div class="grid2">' + a.sal.map(function (s) { return '<div class="item"><h4>' + s.n + ' <small>' + esc(s.at) + '</small></h4><p>' + TX.sal[s.n] + '</p></div>'; }).join('') + a.gwi.map(function (s) { return '<div class="item"><h4>' + s.n + ' <small>' + esc(s.at) + '</small> <span class="tag g">귀인</span></h4><p>' + TX.gwi[s.n] + '</p></div>'; }).join('') + '</div>' : '<p class="p">두드러진 신살이 없어 무난한 흐름입니다.</p>') +
           '<h5 class="mini-h">기둥 사이의 관계</h5>' + relHTML }
       ], say: '설계도를 알면 공사가 쉬워져요. ' + Y.name + ' 기운을 곁에 두세요.' });
 
@@ -1356,11 +1369,15 @@ var ART = (function () {
     // 2장 돈
     var moneyYears = []; for (yy = THIS_YEAR; yy < THIS_YEAR + 10; yy++) { var mi = yearInfo(r, yy); var ms = mi.sc.s + ((mi.gs === 2 || mi.gb === 2) ? 12 : 0) + ((mi.gs === 1) ? 6 : 0) - (mi.gs === 0 && a.grp[2] ? 6 : 0); moneyYears.push({ label: String(yy).slice(2) + '년', sub: korean(mi.p), s: Math.max(10, Math.min(98, ms)), Y: yy }); }
     var bestM = moneyYears.slice().sort(function (x, y) { return y.s - x.s; }).slice(0, 2).map(function (x) { return x.Y; }).sort();
-    var dyMoney = c.yun.list.map(function (d) { var sc = SJ.periodScore(r, d.p).s + ((SJ.relGroup(dm, SJ.GAN_EL[d.p.g]) === 2 || SJ.relGroup(dm, SJ.ZHI_EL[d.p.z]) === 2) ? 10 : 0); return { d: d, s: sc }; }).sort(function (x, y) { return y.s - x.s; })[0];
+    var nowAge = age(c, THIS_YEAR);
+    var futureDy = c.yun.list.filter(function (d) { return d.age + 9 >= nowAge && d.age <= nowAge + 30; });
+    if (!futureDy.length) futureDy = c.yun.list.filter(function (d) { return d.age + 9 >= nowAge; });
+    if (!futureDy.length) futureDy = c.yun.list.slice(-1);
+    var dyMoney = futureDy.map(function (d) { var sc = SJ.periodScore(r, d.p).s + ((SJ.relGroup(dm, SJ.GAN_EL[d.p.g]) === 2 || SJ.relGroup(dm, SJ.ZHI_EL[d.p.z]) === 2) ? 10 : 0); return { d: d, s: sc }; }).sort(function (x, y) { return y.s - x.s; })[0];
     var hiM = moneyYears.map(function (x) { return x.Y; }).indexOf(bestM[0]);
     chs.push({ title: '2장. 돈이 드나드는 문', items: [
       { t: '하늘이 건네준 당신의 재물 그릇', h: wealth(r) },
-      { t: '돈길이 크게 열리는 시기', h: '<p class="p">앞으로 10년 중 돈의 흐름이 가장 좋은 해는 <b>' + bestM.join('년, ') + '년</b>입니다. 큰 흐름(대운)으로는 <b>' + dyMoney.d.age + '~' + (dyMoney.d.age + 9) + '세 ' + korean(dyMoney.d.p) + ' 대운</b>이 재물 운의 전성기입니다.</p>' + ART.bars(moneyYears, hiM) + '<p class="hint">막대 점수는 도움 기운, 재성·식상의 유입, 일지와의 합충을 합산한 참고 지표입니다.</p>' },
+      { t: '돈길이 크게 열리는 시기', h: '<p class="p">앞으로 10년 중 돈의 흐름이 가장 좋은 해는 <b>' + bestM.join('년, ') + '년</b>입니다. ' + (dyMoney.d.age <= nowAge && nowAge <= dyMoney.d.age + 9 ? '지금 지나고 있는 ' : '앞으로 30년 안의 대운 가운데에서는 ') + '<b>' + dyMoney.d.age + '~' + (dyMoney.d.age + 9) + '세(' + dyMoney.d.year + '년~) ' + korean(dyMoney.d.p) + ' 대운</b>이 재물 흐름이 가장 좋은 구간입니다.</p>' + ART.bars(moneyYears, hiM) + '<p class="hint">막대 점수는 도움 기운, 재성·식상의 유입, 일지와의 합충을 합산한 참고 지표입니다.</p>' },
       { t: '부의 축적을 돕는 선택과 습관', h: items(moneyHabits(r)) }
     ], say: a.grp[2] === 0 ? '돈이 눈앞에 안 보인다고 복이 없는 건 아니에요. 실력이 곧 통장이에요.' : '돈복이 제법이에요. 새는 구멍만 막으면 그릇이 금세 차요.' });
 
@@ -1374,14 +1391,25 @@ var ART = (function () {
     goodZ = goodZ.concat([[8, 0, 4], [2, 6, 10], [5, 9, 1], [11, 3, 7]].filter(function (x) { return x.indexOf(P.day.z) > -1; })[0].filter(function (z) { return z !== P.day.z; }));
     var spouseEl = SJ.mod(SJ.GAN_EL[dm] + (male ? 2 : 3), 5), spT = TX.dm[spouseEl * 2];
     var bestLove = loves.map(function (l) { return l.s; }).indexOf(Math.max.apply(null, loves.map(function (l) { return l.s; })));
-    chs.push({ title: '3장. 당신에게 묶인 인연의 실', items: [
-      { t: '반복되는 연애 패턴의 비밀', h: '<p class="p">' + TX2.lovePattern[dPos.zhiTen] + '</p>' + (a.sal.some(function (s) { return s.n === '도화살' || s.n === '홍염살'; }) ? '<p class="p">원국에 도화·홍염이 있어 본인이 느끼는 것보다 이성에게 매력적으로 보입니다. 오해를 줄이려면 관계의 선을 분명히 하세요.</p>' : '') + term('일지(태어난 날의 지지)는 배우자 자리입니다. 이 자리에 놓인 역할(십성)이 연애에서 반복되는 습관을 보여 줍니다.') },
-      { t: '운명적 인연의 특징', h: '<p class="p">배우자를 뜻하는 기운은 <b>' + TX.el[spouseEl].name + '</b>입니다. “' + spT.key + '”의 결을 가진 사람, 곧 ' + spT.good + '이 돋보이는 사람에게 끌립니다.</p>' +
-        '<p class="p">배우자 자리와 잘 묶이는 띠: <b>' + goodZ.map(function (z) { return SJ.ANIMAL[z] + '띠'; }).join(', ') + '</b>. 첫 만남부터 편안하거나 오래 알던 사람처럼 느껴질 가능성이 높습니다.</p>' },
-      { t: '앞으로 3년, 연애운이 높아지는 시기', h: ART.bars(loves.map(function (l) { return { label: l.Y + '년', sub: korean(l.p), s: l.s }; }), bestLove) +
-        '<p class="p">특히 좋은 달: ' + topLM.map(function (x) { return '<span class="yr-pill"><b>' + x.Y + '.' + x.m + '월</b></span>'; }).join('') + '</p>' + loves.map(function (l) { return l.why.length ? '<p class="hint">' + l.Y + '년 — ' + l.why.join(', ') + '</p>' : ''; }).join('') },
-      { t: '결혼운과 배우자복', h: love(r) }
-    ], say: '조심하세요. 이 시기엔 ' + esc(p.name) + '님 매력에 끌리는 사람이 적지 않을 거예요.' });
+    var rel = p.rel || 'na', isMar = rel === 'married', isDat = rel === 'dating', isDiv = rel === 'divorced';
+    var relLead = isMar ? '기혼으로 입력하셔서 부부 관계를 중심으로 풀었습니다.' : isDat ? '연애 중으로 입력하셔서 지금의 관계를 중심으로 풀었습니다.' : isDiv ? '이혼·사별로 입력하셔서 지난 관계의 정리와 앞으로의 인연을 함께 봤습니다.' : rel === 'single' ? '미혼·솔로로 입력하셔서 새 인연을 중심으로 풀었습니다.' : '관계 상태를 입력하시면(입력 칸의 ‘관계 상태’) 기혼·연애 중에 맞춰 내용이 달라집니다.';
+    var pat = TX2.lovePattern[dPos.zhiTen] + ' ' + (isMar ? '결혼 생활에서도 이 습관이 그대로 나타납니다. 배우자가 서운해하는 지점이 대개 여기입니다.' : isDat ? '지금 만나는 분과의 사이에서도 같은 장면이 반복되고 있을 수 있습니다.' : isDiv ? '지난 관계를 돌아보면 이 대목이 반복됐을 가능성이 큽니다. 다음 인연에서는 여기부터 다르게 해 보세요.' : '');
+    var dohwaTxt = a.sal.some(function (s2) { return s2.n === '도화살' || s2.n === '홍염살'; }) ?
+      '<p class="p">도화·홍염이 있어 본인이 느끼는 것보다 주변의 호감을 많이 받습니다. ' + (isMar ? '배우자가 오해하지 않도록 관계의 선과 일정 공유를 분명히 하시면 갈등이 크게 줄어듭니다.' : isDat ? '상대가 불안해하지 않도록 연락과 약속을 분명히 하세요.' : '오해를 줄이려면 관계의 선을 분명히 하세요.') + '</p>' : '';
+    var loveBars = ART.bars(loves.map(function (l) { return { label: l.Y + '년', sub: korean(l.p), s: l.s }; }), bestLove);
+    var monthsTxt = topLM.map(function (x) { return '<span class="yr-pill"><b>' + x.Y + '.' + x.m + '월</b></span>'; }).join('');
+    chs.push({ title: '3장. 당신에게 묶인 인연의 실', lead: relLead, items: [
+      { t: isMar ? '부부 사이에서 반복되는 패턴' : isDat ? '지금 연애에서 반복되는 패턴' : '반복되는 연애 패턴의 비밀',
+        h: '<p class="p">' + pat + '</p>' + dohwaTxt + term('일지(태어난 날의 지지)는 배우자 자리입니다. 이 자리에 놓인 역할(십성)이 가까운 관계에서 반복되는 습관을 보여 줍니다.') },
+      { t: isMar ? '배우자와 결이 맞는 지점' : '운명적 인연의 특징',
+        h: '<p class="p">배우자를 뜻하는 기운은 <b>' + TX.el[spouseEl].name + '</b>입니다. “' + spT.key + '”의 결을 가진 사람, 곧 ' + spT.good + '이 돋보이는 사람' + (isMar ? '이 배우자에게서도 보일 가능성이 높습니다. 그 강점을 인정해 주는 말이 관계를 가장 크게 바꿉니다.' : '에게 끌립니다.') + '</p>' +
+          '<p class="p">배우자 자리와 잘 묶이는 띠: <b>' + goodZ.map(function (z) { return ART.zhi(z) + SJ.ANIMAL[z] + '띠'; }).join(' ') + '</b>. ' + (isMar ? '이 띠의 배우자·가족과는 특히 호흡이 잘 맞습니다.' : '첫 만남부터 편안하거나 오래 알던 사람처럼 느껴질 가능성이 높습니다.') + '</p>' },
+      { t: isMar ? '앞으로 3년, 부부 사이의 흐름' : isDat ? '앞으로 3년, 관계가 깊어지는 시기' : '앞으로 3년, 연애운이 높아지는 시기',
+        h: loveBars + '<p class="p">' + (isMar ? '사이가 특히 좋아지는 달: ' : isDat ? '관계가 한 단계 나아가기 좋은 달(상견례·동거·결혼 이야기 포함): ' : '특히 좋은 달: ') + monthsTxt + '</p>' +
+          loves.map(function (l) { return l.why.length ? '<p class="hint">' + l.Y + '년 — ' + l.why.join(', ') + '</p>' : ''; }).join('') +
+          (isMar ? '<p class="p">점수가 낮은 해에는 애정이 식었다기보다 각자 바빠 대화가 줄어드는 경우가 많습니다. 그때는 일정부터 맞춰 보세요.</p>' : '') },
+      { t: isMar ? '결혼 생활의 강점과 주의점' : isDiv ? '다음 인연에서 달라져야 할 것' : '결혼운과 배우자복', h: love(r, rel) }
+    ], say: isMar ? '배우자와 결이 다른 건 흠이 아니에요. 서로 어디가 다른지 아는 것만으로도 다툼이 줄어들어요.' : isDat ? '지금 인연이 오래갈지는 궁합 탭에서 두 분을 나란히 놓고 보시면 더 또렷해요.' : '조심하세요. 이 시기엔 ' + esc(p.name) + '님 매력에 끌리는 사람이 적지 않을 거예요.' });
 
     // 4장 일
     chs.push({ title: '4장. 세상에서 쓰일 당신의 자리', items: [
@@ -1402,14 +1430,20 @@ var ART = (function () {
     // 6장 흐름
     var nowDy = curDaeun(c, THIS_YEAR);
     var dyPts = c.yun.list.map(function (d) { return { age: d.age, s: SJ.periodScore(r, d.p).s, label: hanja(d.p), d: d }; });
-    var bestD = dyPts.slice().sort(function (x, y) { return y.s - x.s; })[0], worstD = dyPts.slice().sort(function (x, y) { return x.s - y.s; })[0];
+    var nowAge2 = age(c, THIS_YEAR);
+    var futPts = dyPts.filter(function (x) { return x.age + 9 >= nowAge2 && x.age <= nowAge2 + 30; });
+    if (!futPts.length) futPts = dyPts.filter(function (x) { return x.age + 9 >= nowAge2; });
+    if (!futPts.length) futPts = dyPts.slice(-1);
+    var pastPts = dyPts.filter(function (x) { return x.age + 9 < nowAge2; });
+    var bestD = futPts.slice().sort(function (x, y) { return y.s - x.s; })[0], worstD = futPts.slice().sort(function (x, y) { return x.s - y.s; })[0];
+    var bestPast = pastPts.length ? pastPts.slice().sort(function (x, y) { return y.s - x.s; })[0] : null;
     var endG = hPos ? SJ.relGroup(dm, SJ.GAN_EL[hPos.p.g]) : SJ.relGroup(dm, SJ.GAN_EL[c.yun.list[6].p.g]);
     var yrs = ''; for (yy = THIS_YEAR; yy < THIS_YEAR + 5; yy++) yrs += yearRow(r, yy);
     chs.push({ title: '6장. 당신의 운명이 나아갈 흐름', lead: '대운수 ' + c.yun.dsu + '(' + (c.yun.forward ? '순행' : '역행') + ') — 10년마다 바뀌는 큰 흐름을 점수로 그렸습니다.' + (nowDy ? ' 지금은 <b>' + korean(nowDy.p) + ' 대운</b>(' + nowDy.age + '~' + (nowDy.age + 9) + '세)입니다.' : ''),
       items: [
-        { t: '평생 단 한 번 있는 최고의 시기', h: ART.lifeGraph(dyPts, age(c, THIS_YEAR)) + '<p class="p"><b>' + bestD.age + '~' + (bestD.age + 9) + '세(' + bestD.d.year + '년~) ' + korean(bestD.d.p) + ' 대운</b>이 가장 높습니다. ' + TX.daeun[SJ.GROUP[SJ.relGroup(dm, SJ.GAN_EL[bestD.d.p.g])]] + '</p>' +
+        { t: '앞으로 맞이할 최고의 시기', h: ART.lifeGraph(dyPts, nowAge2, dyPts.indexOf(bestD), dyPts.indexOf(worstD)) + '<p class="p">지금은 만 ' + nowAge2 + '세입니다. 앞으로 30년 안의 대운 가운데 <b>' + bestD.age + '~' + (bestD.age + 9) + '세(' + bestD.d.year + '년~) ' + korean(bestD.d.p) + ' 대운</b>이 가장 높습니다. ' + TX.daeun[SJ.GROUP[SJ.relGroup(dm, SJ.GAN_EL[bestD.d.p.g])]] + '</p>' + (bestPast ? '<p class="hint">참고 — 이미 지나온 시기 중에서는 ' + bestPast.age + '~' + (bestPast.age + 9) + '세가 가장 높았습니다.</p>' : '') +
           '<div class="dy" id="dyRow">' + c.yun.list.map(function (d, k) { return '<button type="button" data-i="' + k + '" class="' + (nowDy === d ? 'now' : '') + '" aria-pressed="' + (nowDy === d) + '"><span class="ic2">' + ART.gan(d.p.g) + ART.zhi(d.p.z) + '</span><span class="h"><span class="c' + SJ.GAN_EL[d.p.g] + '">' + GAN[d.p.g] + '</span><span class="c' + SJ.ZHI_EL[d.p.z] + '">' + ZHI[d.p.z] + '</span></span><span class="a">' + d.age + '세</span><span class="a">' + d.year + '</span></button>'; }).join('') + '</div><div id="dyDetail"></div>' },
-        { t: '특히 조심해야 할 시기', h: '<p class="p"><b>' + worstD.age + '~' + (worstD.age + 9) + '세(' + worstD.d.year + '년~) ' + korean(worstD.d.p) + ' 대운</b>은 부담이 큰 흐름입니다. 이 시기에는 무리한 확장·보증·큰 투자보다 건강과 관계를 지키는 데 집중하세요.</p><h5 class="mini-h">가까운 5년</h5><div class="years">' + yrs + '</div>' },
+        { t: '앞으로 특히 조심해야 할 시기', h: '<p class="p"><b>' + worstD.age + '~' + (worstD.age + 9) + '세(' + worstD.d.year + '년~) ' + korean(worstD.d.p) + ' 대운</b>은 앞으로 30년 안에서 부담이 가장 큰 흐름입니다. 이 시기에는 무리한 확장·보증·큰 투자보다 건강과 관계를 지키는 데 집중하세요.</p><h5 class="mini-h">가까운 5년</h5><div class="years">' + yrs + '</div>' },
         { t: '끝내 닿게 될 인생의 종착점', h: '<p class="p">' + (hPos ? '말년을 뜻하는 시주는 ' + tm(hPos.ganTen) + ' — ' : '태어난 시간을 몰라 후반 대운으로 봅니다 — ') + TX2.ending[endG] + '</p>' }
       ], say: '주저앉아 계실 시간이 없어요. ' + (bestD.age > age(c, THIS_YEAR) ? '인생의 판도가 바뀔 ' + bestD.age + '세가 다가오고 있으니까요.' : '가장 빛나는 시기에 들어섰거나 지나왔으니, 쌓은 것을 거둘 때예요.') });
 
@@ -1443,7 +1477,7 @@ var ART = (function () {
     var bestMo = months.slice().sort(function (x, y) { return y.s - x.s; })[0];
     chs.push({ title: '10장. ' + THIS_YEAR + '년 월별 흐름', items: [
       { t: '열두 달 운기 그래프', h: ART.bars(months, now.getMonth()) + '<p class="hint">진한 막대는 이번 달, 노란 막대는 천중살(일본식 쉬어 가는 달)입니다. 월은 절기 기준입니다.</p>' },
-      { t: '달마다 한 줄 조언', h: '<div class="mlist">' + months.map(function (x) { var g = SJ.relGroup(dm, SJ.GAN_EL[x.p.g]); return '<div><b>' + x.label + '</b><span class="hj">' + hanja(x.p) + '</span><p>' + ['사람과 함께 움직이는 달', '표현하고 만드는 달', '실속을 챙기는 달', '책임과 평가의 달', '배우고 충전하는 달'][g] + (x.flag ? ' · 큰 결정은 미루기' : '') + '</p></div>'; }).join('') + '</div><p class="p">올해 가장 힘이 실리는 달은 <b>' + bestMo.label + '</b>입니다.</p>' }
+      { t: '달마다 한 줄 조언', h: '<div class="mlist">' + months.map(function (x) { var g = SJ.relGroup(dm, SJ.GAN_EL[x.p.g]); return '<div><b>' + x.label + '</b><span class="ic2 inl">' + ART.gan(x.p.g) + ART.zhi(x.p.z) + '</span><span class="hj">' + hanja(x.p) + '</span><p>' + ['사람과 함께 움직이는 달', '표현하고 만드는 달', '실속을 챙기는 달', '책임과 평가의 달', '배우고 충전하는 달'][g] + (x.flag ? ' · 큰 결정은 미루기' : '') + '</p></div>'; }).join('') + '</div><p class="p">올해 가장 힘이 실리는 달은 <b>' + bestMo.label + '</b>입니다.</p>' }
     ] });
 
     // 11장 궁금증
@@ -1539,16 +1573,20 @@ var ART = (function () {
     out.push(['행운의 돈 습관', '', TX.el[a.yong].color + ' 지갑, ' + TX.el[a.yong].dir + '쪽 정리처럼 작은 의식이 마음을 다잡아 줍니다(상징적 조언).']);
     return out;
   }
-  function love(r) {
+  function love(r, rel) {
     var a = r.a, p = r.p, P = r.c.pillars, male = p.gender === 'M', out = [];
+    var isMar = rel === 'married', isDat = rel === 'dating', isDiv = rel === 'divorced';
     var starG = male ? 2 : 3, cntStar = a.grp[starG], star = male ? '재성' : '관성', dayPos = posOf(a, 'day');
     var spouse = { '비견': '친구처럼 대등한 배우자', '겁재': '승부욕 있는 에너지형 배우자', '식신': '편안하고 다정한 배우자', '상관': '재치 있고 자유로운 배우자', '편재': '활동적이고 사교적인 배우자', '정재': '성실하고 알뜰한 배우자', '편관': '카리스마 있는 배우자', '정관': '반듯하고 책임감 있는 배우자', '편인': '독특하고 개성 있는 배우자', '정인': '자상하게 보살펴 주는 배우자' }[dayPos.zhiTen];
-    var lead = '배우자 자리는 <b>' + ZK[P.day.z] + ' · ' + tm(dayPos.zhiTen) + '</b> — ' + spouse + '와 인연이 깊습니다. 배우자 자리의 에너지 단계는 ' + dayPos.stage + '(' + TX.stage[dayPos.stage].split(' — ')[0] + ')입니다.';
-    if (cntStar === 0) out.push([star + ' 없음', 'w', '배우자를 뜻하는 기운이 원국에 드러나 있지 않아 인연이 늦거나 기준이 높은 편입니다. ' + star + '이 들어오는 해가 결정적 시기입니다.']);
-    else if (cntStar >= 3) out.push([star + ' 많음', 'w', '이성 인연이 많습니다. 선택의 순간에 신중함이 필요합니다.']);
-    else out.push([star + ' ' + cntStar + '개', 'g', '배우자 기운이 알맞게 있어 인연이 자연스럽게 이어지는 편입니다.']);
-    if (!male && has(a, '정관') && has(a, '편관')) out.push(['관살혼잡', 'w', '성향이 다른 두 타입 사이에서 고민하기 쉽습니다. 나의 기준을 먼저 세우세요.']);
-    a.rels.forEach(function (x) { if ((x.a === '일' || x.b === '일') && x.t === '지지' && /충|원진/.test(x.r)) out.push(['배우자 자리 ' + x.r, 'b', '결혼 전후 생활 환경의 변화가 생기기 쉽습니다. 충분히 겪어 보고 결정하세요.']); });
+    var lead = '배우자 자리는 <b>' + ZK[P.day.z] + ' · ' + tm(dayPos.zhiTen) + '</b> — ' + spouse + (isMar ? '와 살고 있을 가능성이 높습니다.' : '와 인연이 깊습니다.') + ' 배우자 자리의 에너지 단계는 ' + dayPos.stage + '(' + TX.stage[dayPos.stage].split(' — ')[0] + ')입니다.';
+    if (cntStar === 0) out.push([star + ' 없음', 'w', isMar ? '배우자를 뜻하는 기운이 원국에 없어, 결혼 전 기준이 높았거나 인연이 늦게 닿았을 수 있습니다. 지금은 ' + star + '이 들어오는 해에 부부 사이의 변화가 큽니다.' : '배우자를 뜻하는 기운이 드러나 있지 않아 인연이 늦거나 기준이 높은 편입니다. ' + star + '이 들어오는 해가 결정적 시기입니다.']);
+    else if (cntStar >= 3) out.push([star + ' 많음', 'w', isMar ? '주변의 관심이 많은 편이라, 배우자가 불안을 느끼지 않도록 선을 분명히 하는 것이 관계를 지킵니다.' : '이성 인연이 많습니다. 선택의 순간에 신중함이 필요합니다.']);
+    else out.push([star + ' ' + cntStar + '개', 'g', isMar ? '배우자 기운이 알맞아 부부 관계가 큰 굴곡 없이 이어지는 구조입니다.' : '배우자 기운이 알맞게 있어 인연이 자연스럽게 이어지는 편입니다.']);
+    if (!male && has(a, '정관') && has(a, '편관')) out.push(['관살혼잡', 'w', isMar ? '성향이 다른 요구(가정·일·주변 기대) 사이에서 역할 갈등을 느끼기 쉽습니다. 우선순위를 배우자와 함께 정하세요.' : '성향이 다른 두 타입 사이에서 고민하기 쉽습니다. 나의 기준을 먼저 세우세요.']);
+    a.rels.forEach(function (x) { if ((x.a === '일' || x.b === '일') && x.t === '지지' && /충|원진/.test(x.r)) out.push(['배우자 자리 ' + x.r, 'b', isMar ? '부부 사이에 이사·이직·주거 변화 같은 외부 변화가 자주 얹히는 구조입니다. 큰 변화는 함께 미리 상의해 결정하세요.' : '결혼 전후 생활 환경의 변화가 생기기 쉽습니다. 충분히 겪어 보고 결정하세요.']); });
+    if (isMar) out.push(['부부 궁합 보기', 'g', '배우자의 생년월일시를 명부에 저장하시면 궁합 탭에서 두 분을 나란히 놓고 점수와 이유를 볼 수 있습니다.']);
+    if (isDat) out.push(['결혼 시기 참고', '', '위 3년 그래프에서 점수가 높고 배우자 별이 들어오는 해가 결혼 이야기를 꺼내기 좋은 시기입니다.']);
+    if (isDiv) out.push(['다시 시작할 때', 'g', '배우자 자리가 흔들린 해를 이미 지나왔습니다. 다음 인연은 조건보다 생활 리듬(식사·수면·돈 쓰는 방식)이 맞는지를 먼저 보세요.']);
     return '<p class="p">' + lead + '</p>' + items(uniqItems(out));
   }
   function career(r) {
@@ -1680,6 +1718,7 @@ var ART = (function () {
       '<details class="term"><summary>점수 기준</summary><p>일간의 합·상생·상극(25), 일지(배우자 자리)의 합·충·원진(25), 띠의 삼합·육합·충(15), 서로 부족한 오행을 채워 주는지(25), 상대 일간이 내 배우자 별과 같은 오행인지(10)를 더했습니다. 전통 궁합법을 단순화한 참고용 점수입니다.</p></details>';
   });
   function a4(r) { return r.a.pos.slice().reverse().map(function (x) { return hanja(x.p); }).join(' '); }
+  function a4ic(r) { return '<span class="pillrow">' + r.a.pos.slice().reverse().map(function (x) { return '<span class="pill4">' + ART.gan(x.p.g) + ART.zhi(x.p.z) + '<b>' + hanja(x.p) + '</b></span>'; }).join('') + '</span>'; }
 
   /* ---------- 오늘의 운세 ---------- */
   $('#tGo').addEventListener('click', renderToday);
@@ -1715,7 +1754,7 @@ var ART = (function () {
     });
   }
   function shareLink(p) {
-    var q = { n: p.name, g: p.gender, c: p.cal === 'lunar' ? 1 : 0, l: p.leap ? 1 : 0, y: p.y, m: p.m, d: p.d, t: p.timeKnown ? pad(p.h) + pad(p.mi) : '', o: p.lon, x: p.city, j: p.lmt === false ? 0 : 1, z: p.zasi === 'ya' ? 1 : 0 };
+    var q = { n: p.name, g: p.gender, c: p.cal === 'lunar' ? 1 : 0, l: p.leap ? 1 : 0, y: p.y, m: p.m, d: p.d, t: p.timeKnown ? pad(p.h) + pad(p.mi) : '', o: p.lon, x: p.city, j: p.lmt === false ? 0 : 1, z: p.zasi === 'ya' ? 1 : 0, r: p.rel || 'na' };
     var b = btoa(unescape(encodeURIComponent(JSON.stringify(q)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     var base = /github\.io$/.test(location.hostname) ? location.origin + location.pathname : APP_URL;
     return base + '#p=' + b;
@@ -1725,7 +1764,7 @@ var ART = (function () {
     try {
       var s = m[1].replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '=';
       var q = JSON.parse(decodeURIComponent(escape(atob(s))));
-      return { id: null, name: q.n, gender: q.g, cal: q.c ? 'lunar' : 'solar', leap: !!q.l, y: q.y, m: q.m, d: q.d, timeKnown: !!q.t, h: q.t ? +q.t.slice(0, 2) : 12, mi: q.t ? +q.t.slice(2) : 0, lon: q.o, city: q.x, lmt: q.j !== 0, zasi: q.z ? 'ya' : 'jo', shared: true };
+      return { id: null, name: q.n, gender: q.g, cal: q.c ? 'lunar' : 'solar', leap: !!q.l, y: q.y, m: q.m, d: q.d, timeKnown: !!q.t, h: q.t ? +q.t.slice(0, 2) : 12, mi: q.t ? +q.t.slice(2) : 0, lon: q.o, city: q.x, lmt: q.j !== 0, zasi: q.z ? 'ya' : 'jo', rel: q.r || 'na', shared: true };
     } catch (e) { return null; }
   }
   function copy(text, done) {
